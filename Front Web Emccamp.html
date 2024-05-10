@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerenciamento de Clientes</title>
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-5">
+<h1>Gerenciamento de Clientes</h1>
+<hr>
+<form id="clienteForm">
+	<div class="form-group">
+		<label for="nome">Nome:</label>
+		<input type="text" class="form-control" id="nome" required>
+	</div>
+	<div class="form-group">
+		<label for="email">Email:</label>
+		<input type="email" class="form-control" id="email" required>
+	</div>
+	<button type="submit" class="btn btn-primary">Cadastrar</button>
+</form>
+<hr>
+<h2>Lista de Clientes</h2>
+<ul id="listaClientes" class="list-group">
+	<!-- Lista de clientes será preenchida dinamicamente -->
+</ul>
+</div>
+
+<div class="modal fade" id="modalAlterarCliente" tabindex="-1" role="dialog" aria-labelledby="modalAlterarClienteLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalAlterarClienteLabel">Alterar Cliente</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="alterarClienteForm" onsubmit="return validarFormulario()">
+                    <div class="form-group">
+                        <label for="alterarNome">Nome:</label>
+                        <input type="text" class="form-control" id="alterarNome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="alterarEmail">Email:</label>
+                        <input type="email" class="form-control" id="alterarEmail" required>
+                    </div>
+                    <input type="hidden" id="clienteIdHidden">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="alterar()">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+$(document).ready(function() {
+	carregarClientes();
+
+	$('#clienteForm').submit(function(event) {
+		event.preventDefault();
+		cadastrarCliente();
+	});
+
+	
+	function carregarClientes() {
+	$.ajax({
+		url: 'https://localhost:7018/clientes',
+		type: 'GET',
+		success: function(data) {
+			$('#listaClientes').empty();
+			$.each(data, function(index, cliente) {
+				var itemLista = $('<li class="list-group-item">' + cliente.nome + ' - ' + cliente.email + ' <button class="btn btn-danger btn-sm ml-2" onclick="excluirCliente(' + cliente.id + ')">Excluir</button> <button class="btn btn-secondary btn-sm ml-2" onclick="abrirModalAlterarCliente(' + cliente.id + ', \'' + cliente.nome + '\', \'' + cliente.email + '\')">Alterar</button></li>');
+				$('#listaClientes').append(itemLista);
+		});
+	},
+	error: function(xhr, status, error) {
+		console.error('Erro ao carregar clientes:', status, error);
+	}
+});
+}
+
+
+	function cadastrarCliente() {
+		var nome = $('#nome').val();
+		var email = $('#email').val();
+		var cliente = { nome: nome, email: email };
+		$.ajax({
+			url: 'https://localhost:7018/clients',
+			type: 'POST',
+			contentType: 'application/json',
+			data: JSON.stringify(cliente),
+			success: function() {
+				$('#nome').val('');
+				$('#email').val('');
+				carregarClientes();
+			},
+			error: function(xhr, status, error) {
+				alert('Erro ao Cadastrar cliente: ' + status + ' ' + error);
+
+			}
+		});
+	}
+
+	window.excluirCliente = function(id) {
+		$.ajax({
+			url: 'https://localhost:7018/clientes/' + id,
+			type: 'DELETE',
+			success: function() {
+				carregarClientes();
+			},
+			error: function(xhr, status, error) {
+				console.error('Erro ao excluir cliente:', status, error);
+			}
+		});
+	}
+	
+	window.abrirModalAlterarCliente = function(id, nome,email) {
+		$('#alterarNome').val(nome);
+		$('#alterarEmail').val(email);
+		$('#clienteIdHidden').val(id);
+		$('#modalAlterarCliente').modal('show');
+	}
+	
+	
+window.alterar = function () {
+    var id = $('#clienteIdHidden').val(); 
+
+    var nomeNovo = $('#alterarNome').val();
+    var emailNovo = $('#alterarEmail').val();
+
+    var cliente = { nome: nomeNovo, email: emailNovo };
+    $.ajax({
+        url: 'https://localhost:7018/clientes/' + id, 
+        type: 'PUT', 
+        contentType: 'application/json',
+        data: JSON.stringify(cliente),
+        success: function () {
+            $('#alterarNome').val('');
+            $('#alterarEmail').val('');
+            $('#modalAlterarCliente').modal('hide'); 
+            carregarClientes();
+        },
+        error: function (xhr, status, error) {
+            alert('Erro ao atualizar cliente: ' + status + ' ' + error);
+        }
+    });
+}
+});
+</script>
+</body>
+</html>
